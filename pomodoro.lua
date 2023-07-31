@@ -1,9 +1,14 @@
 local obs = obslua
 local timer_active = false
-local pomodoro_interval = 25 * 60 -- 25 minutes in seconds
-local break_interval = 5 * 60 -- 5 minutes in seconds
+local pomodoro_interval = 25 * 60 
+local break_interval = 5 * 60 
 local timer_start_time = 0
 local is_break_time = false
+
+-- example of a comment before i forget
+
+local working_text = "...Working..."
+local break_text = "~ On Break ~"
 
 function pomodoro_timer()
     local current_time = os.time()
@@ -27,13 +32,15 @@ function pomodoro_timer()
         local seconds = remaining_time % 60
 
         local timer_text = string.format("%02d:%02d", minutes, seconds)
-        obs.script_log(obs.LOG_INFO, "Timer: " .. timer_text)
+        local phase_text = is_break_time and break_text or working_text
+        local final_text = phase_text .. timer_text
+        obs.script_log(obs.LOG_INFO, "Timer: " .. final_text)
 
         -- Replace "Timer Text" with the name of your Text Source in OBS
         local source = obs.obs_get_source_by_name("Timer Text")
         if source ~= nil then
             local settings = obs.obs_data_create()
-            obs.obs_data_set_string(settings, "text", timer_text)
+            obs.obs_data_set_string(settings, "text", final_text)
             obs.obs_source_update(source, settings)
             obs.obs_data_release(settings)
             obs.obs_source_release(source)
@@ -60,5 +67,12 @@ function script_properties()
     local props = obs.obs_properties_create()
     obs.obs_properties_add_button(props, "start_button", "Start Pomodoro", start_pomodoro_timer)
     obs.obs_properties_add_button(props, "stop_button", "Stop Pomodoro", stop_pomodoro_timer)
+    obs.obs_properties_add_text(props, "working_text", "Working Phase Text", obs.OBS_TEXT_DEFAULT)
+    obs.obs_properties_add_text(props, "break_text", "Break Phase Text", obs.OBS_TEXT_DEFAULT)
     return props
+end
+
+function script_update(settings)
+    working_text = obs.obs_data_get_string(settings, "working_text")
+    break_text = obs.obs_data_get_string(settings, "break_text")
 end
